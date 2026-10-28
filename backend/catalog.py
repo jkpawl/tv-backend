@@ -46,25 +46,25 @@ def _pick_package(app, model):
 
 def get_apps_for_device(store, device, include_hidden=False):
     apps = store.fixture("apps")
-    mdl = _find_model(store.fixture("models"), device["model"])
-    if mdl is None:
+    model = _find_model(store.fixture("models"), device["model"])
+    if model is None:
         return []
-    fwn = _version_number(device.get("firmware", "0.0"))
-    out = []
-    for a in apps:
-        if not _is_available(a, device, fwn, include_hidden):
+    firmware = _version_number(device.get("firmware", "0.0"))
+    result = []
+    for app in apps:
+        if not _is_available(app, device, firmware, include_hidden):
             continue
-        pkg = _pick_package(a, mdl)
-        if pkg is None:
+        package = _pick_package(app, model)
+        if package is None:
             continue
-        out.append({
-            "id": a["id"],
-            "name": a["name"],
-            "color": a.get("color", "#444444"),
-            "version": pkg["version"],
-            "api": pkg["api"],
-            "featured": bool(a.get("featured")),
+        result.append({
+            "id": app["id"],
+            "name": app["name"],
+            "color": app.get("color", "#444444"),
+            "version": package["version"],
+            "api": package["api"],
+            "featured": bool(app.get("featured")),
         })
     # Featured first, then by name; the sort is stable, so ties keep catalog order.
-    out.sort(key=lambda item: (not item["featured"], item["name"].lower()))
-    return out
+    result.sort(key=lambda item: (not item["featured"], item["name"].lower()))
+    return result
