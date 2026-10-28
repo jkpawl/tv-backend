@@ -18,6 +18,16 @@ def _find_model(models, name):
     return None
 
 
+def _is_available(app, device, firmware, include_hidden):
+    """Whether ``app`` may be shown on ``device`` running ``firmware`` (a version number)."""
+    if app.get("hidden") and not include_hidden:
+        return False
+    regions = app.get("regions", [])
+    if "*" not in regions and device.get("region") not in regions:
+        return False
+    return firmware >= _version_number(app.get("min_firmware", "0.0"))
+
+
 def get_apps_for_device(store, device, include_hidden=False):
     apps = store.fixture("apps")
     mdl = _find_model(store.fixture("models"), device["model"])
@@ -27,21 +37,7 @@ def get_apps_for_device(store, device, include_hidden=False):
     res = []
     feat = []
     for a in apps:
-        ok = True
-        if a.get("hidden") and not include_hidden:
-            ok = False
-        if ok:
-            r = a.get("regions", [])
-            if "*" in r:
-                pass
-            elif device.get("region") in r:
-                pass
-            else:
-                ok = False
-        if ok:
-            if fwn < _version_number(a.get("min_firmware", "0.0")):
-                ok = False
-        if not ok:
+        if not _is_available(a, device, fwn, include_hidden):
             continue
         pkg = None
         if mdl.get("year") == 2019:
