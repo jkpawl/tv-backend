@@ -58,8 +58,9 @@ class Api:
     def get_device(self, query, body, device_id):
         device = self.registry.get(device_id)
         model = self.registry.model(device["model"])
-        details = dict(device)
-        details.update(model)
+        # Device fields win: a model may carry its own "firmware" (INC-2291).
+        details = dict(model)
+        details.update(device)
         details["model_name"] = model["name"]
         details["model_year"] = model["year"]
         return 200, details

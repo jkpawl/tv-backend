@@ -33,6 +33,31 @@ class ApiContractTest(ServerTestCase):
         self.assertIsInstance(body["utc_offset_min"], int)
         self.assertIsInstance(body["downloads"], int)
 
+    def test_device_details_keep_device_fields_over_model_fields(self):
+        # LM-65X25 carries its own "firmware" in the models fixture (INC-2291).
+        status, body = self.get_json("/api/devices/TV-003")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["firmware"], "2.8.1-eu")
+        self.assertEqual(body["model_name"], "Lumio X 65\"")
+
+    def test_installed_update_is_not_offered_again(self):
+        """The TV's install cycle from tv/app.js must not loop (INC-2291)."""
+        _, device = self.get_json("/api/devices/TV-003")
+        _, res = self.post_json("/api/ota/check", {
+            "device_id": "TV-003", "firmware": device["firmware"], "state": "standby", "utc_offset_min": 60,
+        })
+        build = res["update"]["build"]
+        self.post_json("/api/ota/download", {"device_id": "TV-003", "build": build})
+        self.post_json("/api/devices/TV-003/report", {"firmware": build, "state": "standby"})
+
+        _, device = self.get_json("/api/devices/TV-003")
+        self.assertEqual(device["firmware"], build)
+        _, res = self.post_json("/api/ota/check", {
+            "device_id": "TV-003", "firmware": device["firmware"], "state": "standby", "utc_offset_min": 60,
+        })
+        self.assertIsNone(res["update"])
+        self.assertEqual(device["downloads"], 1)
+
     def test_device_apps(self):
         status, body = self.get_json("/api/devices/TV-001/apps")
         self.assertEqual(status, 200)
