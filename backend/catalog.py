@@ -1,6 +1,15 @@
 """App catalog: which apps a given TV shows on its home screen."""
 
 
+def _version_number(text):
+    """"2.9.0" -> 209: major*100 + minor, patch ignored, 0 when unparsable."""
+    try:
+        parts = text.split(".")
+        return int(parts[0]) * 100 + int(parts[1])
+    except (ValueError, IndexError):
+        return 0
+
+
 def get_apps_for_device(store, device, include_hidden=False):
     apps = store.fixture("apps")
     models = store.fixture("models")
@@ -10,12 +19,7 @@ def get_apps_for_device(store, device, include_hidden=False):
             mdl = m
     if mdl == None:
         return []
-    fw = device.get("firmware", "0.0")
-    try:
-        p = fw.split(".")
-        fwn = int(p[0]) * 100 + int(p[1])
-    except (ValueError, IndexError):
-        fwn = 0
+    fwn = _version_number(device.get("firmware", "0.0"))
     res = []
     feat = []
     for a in apps:
@@ -31,13 +35,7 @@ def get_apps_for_device(store, device, include_hidden=False):
             else:
                 ok = False
         if ok:
-            mf = a.get("min_firmware", "0.0")
-            try:
-                q = mf.split(".")
-                mfn = int(q[0]) * 100 + int(q[1])
-            except (ValueError, IndexError):
-                mfn = 0
-            if fwn < mfn:
+            if fwn < _version_number(a.get("min_firmware", "0.0")):
                 ok = False
         if not ok:
             continue
