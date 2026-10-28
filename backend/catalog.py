@@ -28,6 +28,22 @@ def _is_available(app, device, firmware, include_hidden):
     return firmware >= _version_number(app.get("min_firmware", "0.0"))
 
 
+def _pick_package(app, model):
+    """The package to install on ``model``, or None if none fits.
+
+    2019 models always get the first package, regardless of ``max_api``.
+    Newer models get the highest api within ``max_api``; on a tie, the first one.
+    """
+    if model.get("year") == 2019:
+        return app["packages"][0]
+    max_api = model.get("max_api", 0)
+    best = None
+    for package in app["packages"]:
+        if package["api"] <= max_api and (best is None or package["api"] > best["api"]):
+            best = package
+    return best
+
+
 def get_apps_for_device(store, device, include_hidden=False):
     apps = store.fixture("apps")
     mdl = _find_model(store.fixture("models"), device["model"])
@@ -39,15 +55,8 @@ def get_apps_for_device(store, device, include_hidden=False):
     for a in apps:
         if not _is_available(a, device, fwn, include_hidden):
             continue
-        pkg = None
-        if mdl.get("year") == 2019:
-            pkg = a["packages"][0]
-        else:
-            for x in a["packages"]:
-                if x["api"] <= mdl.get("max_api", 0):
-                    if pkg == None or x["api"] > pkg["api"]:
-                        pkg = x
-        if pkg == None:
+        pkg = _pick_package(a, mdl)
+        if pkg is None:
             continue
         item = {
             "id": a["id"],
