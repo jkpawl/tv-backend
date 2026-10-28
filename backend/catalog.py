@@ -50,32 +50,21 @@ def get_apps_for_device(store, device, include_hidden=False):
     if mdl is None:
         return []
     fwn = _version_number(device.get("firmware", "0.0"))
-    res = []
-    feat = []
+    out = []
     for a in apps:
         if not _is_available(a, device, fwn, include_hidden):
             continue
         pkg = _pick_package(a, mdl)
         if pkg is None:
             continue
-        item = {
+        out.append({
             "id": a["id"],
             "name": a["name"],
             "color": a.get("color", "#444444"),
             "version": pkg["version"],
             "api": pkg["api"],
-        }
-        if a.get("featured"):
-            feat.append(item)
-        else:
-            res.append(item)
-    feat.sort(key=lambda i: i["name"].lower())
-    res.sort(key=lambda i: i["name"].lower())
-    out = []
-    for i in feat:
-        i["featured"] = True
-        out.append(i)
-    for i in res:
-        i["featured"] = False
-        out.append(i)
+            "featured": bool(a.get("featured")),
+        })
+    # Featured first, then by name; the sort is stable, so ties keep catalog order.
+    out.sort(key=lambda item: (not item["featured"], item["name"].lower()))
     return out
