@@ -156,6 +156,10 @@ class FirmwareTest(StoreTestCase):
         ])
         self.assertEqual(ids(get_apps_for_device(self.store, self.device("1.100"))), ["a"])
 
+    def test_none_firmware_raises(self):
+        with self.assertRaises(AttributeError):
+            get_apps_for_device(self.store, {"id": "X", "model": "LM-55Q23", "region": "EU", "firmware": None})
+
     def test_unparsable_min_firmware_means_no_minimum(self):
         self.set_fixture("apps", [
             {"id": "a", "name": "A", "regions": ["*"], "min_firmware": "x", "packages": [{"api": 3, "version": "1.0"}]},
@@ -214,6 +218,14 @@ class PackageSelectionTest(StoreTestCase):
         with self.assertRaises(IndexError):
             get_apps_for_device(self.store, self.device("LM-43S19"))
 
+    def test_api_tie_picks_first_package(self):
+        self.set_fixture("apps", [
+            {"id": "a", "name": "A", "regions": ["*"], "min_firmware": "2.0",
+             "packages": [{"api": 5, "version": "first"}, {"api": 5, "version": "second"}]},
+        ])
+        apps = get_apps_for_device(self.store, self.device("LM-65X25"))
+        self.assertEqual(summary(apps), [("a", "first", 5, False)])
+
     def test_model_without_max_api_gets_nothing(self):
         self.set_fixture("models", [{"model": "LM-T", "year": 2024}])
         self.assertEqual(get_apps_for_device(self.store, self.device("LM-T")), [])
@@ -245,6 +257,18 @@ class VisibilityAndOrderTest(StoreTestCase):
         apps = get_apps_for_device(self.store, self.device())
         self.assertEqual([(a["name"], a["featured"]) for a in apps],
                          [("Delta", True), ("zeta", True), ("Alpha", False), ("beta", False)])
+
+    def test_featured_is_normalized_to_bool(self):
+        self.set_fixture("apps", [
+            {"id": "a", "name": "A", "regions": ["*"], "min_firmware": "2.0", "featured": 1,
+             "packages": [{"api": 3, "version": "1.0"}]},
+            {"id": "b", "name": "B", "regions": ["*"], "min_firmware": "2.0", "featured": 0,
+             "packages": [{"api": 3, "version": "1.0"}]},
+        ])
+        apps = get_apps_for_device(self.store, self.device())
+        self.assertEqual([(a["id"], a["featured"]) for a in apps], [("a", True), ("b", False)])
+        self.assertIs(apps[0]["featured"], True)
+        self.assertIs(apps[1]["featured"], False)
 
     def test_default_color(self):
         self.set_fixture("apps", [
