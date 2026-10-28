@@ -10,14 +10,18 @@ def _version_number(text):
         return 0
 
 
+def _find_model(models, name):
+    """The model entry called ``name``; the last one wins if listed twice."""
+    for model in reversed(models):
+        if model["model"] == name:
+            return model
+    return None
+
+
 def get_apps_for_device(store, device, include_hidden=False):
     apps = store.fixture("apps")
-    models = store.fixture("models")
-    mdl = None
-    for m in models:
-        if m["model"] == device["model"]:
-            mdl = m
-    if mdl == None:
+    mdl = _find_model(store.fixture("models"), device["model"])
+    if mdl is None:
         return []
     fwn = _version_number(device.get("firmware", "0.0"))
     res = []
