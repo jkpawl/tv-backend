@@ -12,10 +12,10 @@ from backend.registry import DeviceNotFound, DeviceRegistry
 
 
 class Api:
-    def __init__(self, store):
+    def __init__(self, store, clock=None):
         self.store = store
         self.registry = DeviceRegistry(store)
-        self.ota = OtaService(store, self.registry)
+        self.ota = OtaService(store, self.registry, clock=clock)
         self.routes = [
             ("GET", r"/api/health", self.health),
             ("GET", r"/api/devices", self.list_devices),

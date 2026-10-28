@@ -1,6 +1,7 @@
 """Over-the-air firmware updates."""
 
 import re
+from datetime import datetime, timezone
 
 _VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-[a-z]+)?$")
 
@@ -13,14 +14,20 @@ def parse_version(text):
     return tuple(int(part) for part in match.groups())
 
 
+def _utc_now():
+    return datetime.now(timezone.utc)
+
+
 class UnknownBuild(LookupError):
     pass
 
 
 class OtaService:
-    def __init__(self, store, registry):
+    def __init__(self, store, registry, clock=None):
+        """``clock`` returns the current UTC time; defaults to the real clock."""
         self.store = store
         self.registry = registry
+        self.clock = clock or _utc_now
 
     def releases(self):
         return self.store.fixture("releases")
