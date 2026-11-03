@@ -1,1 +1,12 @@
-
+{
+  "mcpServers": {
+    "lumio": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcp_server/lumio_ops.py"]
+    },
+    "katalog": {
+      "command": "python3",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcp_server/katalog.py"]
+    }
+  }
+}
